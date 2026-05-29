@@ -289,22 +289,27 @@
     <p class="hero__tag">6 de junio · 9 meses</p>
     <h1 class="hero__title">Para<br/><em>Emma</em></h1>
     <p class="hero__subtitle">con todo el amor que te tengo</p>
-    <div class="hero__counter">
-      <div class="counter-box">
-        <span class="counter-box__num" id="cnt-days">—</span>
-        <span class="counter-box__label">meses</span>
-      </div>
-      <span class="counter-sep">·</span>
-      <div class="counter-box">
-        <span class="counter-box__num" id="cnt-hours">—</span>
-        <span class="counter-box__label">dias</span>
-      </div>
-      <span class="counter-sep">·</span>
-      <div class="counter-box">
-        <span class="counter-box__num" id="cnt-mins">—</span>
-        <span class="counter-box__label">horas</span>
-      </div>
-    </div>
+<div class="hero__counter">
+  <div class="counter-box">
+    <span class="counter-box__num" id="cnt-months">—</span>
+    <span class="counter-box__label">meses</span>
+  </div>
+  <span class="counter-sep">·</span>
+  <div class="counter-box">
+    <span class="counter-box__num" id="cnt-days">—</span>
+    <span class="counter-box__label">días</span>
+  </div>
+  <span class="counter-sep">·</span>
+  <div class="counter-box">
+    <span class="counter-box__num" id="cnt-hours">—</span>
+    <span class="counter-box__label">horas</span>
+  </div>
+  <span class="counter-sep">·</span>
+  <div class="counter-box">
+    <span class="counter-box__num" id="cnt-mins">—</span>
+    <span class="counter-box__label">minutos</span>
+  </div>
+</div>
     <div class="hero__scroll"><span>scrollear</span><div class="hero__scroll-arrow"></div></div>
   </section>
 
@@ -474,23 +479,27 @@ window.toggleLockVis = function() {
 })();
 
 // ── HERO COUNTER (desde el inicio) ──
-(function() {
+(function tick() {
   const start = new Date('2025-09-06');
   const now   = new Date();
 
   let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-  const dayOfMonthStart = start.getDate();
-  if (now.getDate() < dayOfMonthStart) months--;
+  if (now.getDate() < start.getDate()) months--;
 
   const lastAnniv = new Date(start);
   lastAnniv.setMonth(lastAnniv.getMonth() + months);
-  const diffSince = now - lastAnniv;
-  const days  = Math.floor(diffSince / 86400000);
-  const hours = Math.floor((diffSince % 86400000) / 3600000);
+  const diff  = now - lastAnniv;
 
-  document.getElementById('cnt-days').textContent  = months;
-  document.getElementById('cnt-hours').textContent = days;
-  document.getElementById('cnt-mins').textContent  = hours;
+  const days  = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const mins  = Math.floor((diff % 3600000) / 60000);
+
+  document.getElementById('cnt-months').textContent = months;
+  document.getElementById('cnt-days').textContent   = days;
+  document.getElementById('cnt-hours').textContent  = hours;
+  document.getElementById('cnt-mins').textContent   = mins;
+
+  setTimeout(tick, 30000); // actualiza cada 30 segundos
 })();
 
 // ── COUNTDOWN AL 6 DE JUNIO 2026 ──
