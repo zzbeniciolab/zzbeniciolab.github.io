@@ -265,8 +265,8 @@
 <div id="lock-screen">
   <div class="lock-box">
     <span class="lock-icon">🔒</span>
-    <h1 class="lock-title">Hola, <em>Emma</em></h1>
-    <p class="lock-sub">Esta página es solo para vos 💙<br/>Ingresá la contraseña para entrar</p>
+    <h1 class="lock-title">Hola <em>ea</em></h1>
+    <p class="lock-sub">Esta página es solo para vos 💙<br/>Escribí la contraseña para entrar</p>
     <div class="lock-input-wrap">
       <input class="lock-input" id="lock-input" type="password" placeholder="contraseña"
              onkeydown="if(event.key==='Enter') tryUnlock()" />
@@ -274,7 +274,7 @@
     </div>
     <div class="lock-error" id="lock-error"></div>
     <button class="lock-btn" onclick="tryUnlock()">Entrar →</button>
-    <p class="lock-hint">solo vos sabés la clave</p>
+    <p class="lock-hint">solo vos la sabés</p>
   </div>
 </div>
 
@@ -292,17 +292,17 @@
     <div class="hero__counter">
       <div class="counter-box">
         <span class="counter-box__num" id="cnt-days">—</span>
-        <span class="counter-box__label">días</span>
+        <span class="counter-box__label">meses</span>
       </div>
       <span class="counter-sep">·</span>
       <div class="counter-box">
         <span class="counter-box__num" id="cnt-hours">—</span>
-        <span class="counter-box__label">horas</span>
+        <span class="counter-box__label">dias</span>
       </div>
       <span class="counter-sep">·</span>
       <div class="counter-box">
         <span class="counter-box__num" id="cnt-mins">—</span>
-        <span class="counter-box__label">minutos</span>
+        <span class="counter-box__label">horas</span>
       </div>
     </div>
     <div class="hero__scroll"><span>scrollear</span><div class="hero__scroll-arrow"></div></div>
@@ -477,10 +477,20 @@ window.toggleLockVis = function() {
 (function() {
   const start = new Date('2024-09-06');
   const now   = new Date();
-  const diff  = now - start;
-  document.getElementById('cnt-days').textContent  = Math.floor(diff / 86400000);
-  document.getElementById('cnt-hours').textContent = Math.floor((diff % 86400000) / 3600000);
-  document.getElementById('cnt-mins').textContent  = Math.floor((diff % 3600000) / 60000);
+
+  let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+  const dayOfMonthStart = start.getDate();
+  if (now.getDate() < dayOfMonthStart) months--;
+
+  const lastAnniv = new Date(start);
+  lastAnniv.setMonth(lastAnniv.getMonth() + months);
+  const diffSince = now - lastAnniv;
+  const days  = Math.floor(diffSince / 86400000);
+  const hours = Math.floor((diffSince % 86400000) / 3600000);
+
+  document.getElementById('cnt-days').textContent  = months;
+  document.getElementById('cnt-hours').textContent = days;
+  document.getElementById('cnt-mins').textContent  = hours;
 })();
 
 // ── COUNTDOWN AL 6 DE JUNIO 2026 ──
