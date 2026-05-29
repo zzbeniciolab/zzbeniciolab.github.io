@@ -274,7 +274,7 @@
     </div>
     <div class="lock-error" id="lock-error"></div>
     <button class="lock-btn" onclick="tryUnlock()">Entrar →</button>
-    <p class="lock-hint">solo vos sabés la clave 🤫</p>
+    <p class="lock-hint">solo vos sabés la clave</p>
   </div>
 </div>
 
@@ -288,7 +288,7 @@
     <div class="hero__deco-line"></div>
     <p class="hero__tag">6 de junio · 9 meses</p>
     <h1 class="hero__title">Para<br/><em>Emma</em></h1>
-    <p class="hero__subtitle">con todo mi amor, para siempre y un poco más</p>
+    <p class="hero__subtitle">con todo el amor que te tengo</p>
     <div class="hero__counter">
       <div class="counter-box">
         <span class="counter-box__num" id="cnt-days">—</span>
@@ -372,13 +372,13 @@
         <div class="cd-box"><div class="cd-box__num" id="cd-m">—</div><div class="cd-box__label">Min</div></div>
         <div class="cd-box"><div class="cd-box__num" id="cd-s">—</div><div class="cd-box__label">Seg</div></div>
       </div>
-      <p class="countdown-note">¡Nueve meses juntos! 🎉</p>
+      <p class="countdown-note">¡Nueve meses!😁</p>
     </div>
   </section>
 
   <footer>
     <span class="heart">💙</span>
-    <p>Para Emma, con amor eterno</p>
+    <p>Para Emma, con amor</p>
   </footer>
 </div>
 
@@ -451,7 +451,7 @@ window.tryUnlock = function() {
     ls.classList.add('unlocking');
     setTimeout(() => ls.remove(), 600);
   } else {
-    errEl.textContent = 'Contraseña incorrecta, intentá de nuevo 💙';
+    errEl.textContent = 'Contraseña incorrecta, intentá de nuevo huevona';
     inputEl.classList.add('error');
     setTimeout(() => { inputEl.classList.remove('error'); inputEl.value = ''; }, 600);
   }
