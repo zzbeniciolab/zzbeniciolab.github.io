@@ -213,11 +213,17 @@
       }
       .photo-slot__action-btn { width: 44px; height: 44px; font-size: 1.05rem; box-shadow: 0 4px 12px rgba(26,42,58,.25); }
       .photo-slot__action-btn.replace { background: rgba(255,255,255,.95); }
-      /* El input de archivo queda pintado por encima de la foto (mismo nivel
-         que el <img> pero después en el DOM), así que sin esto el primer toque
-         abriría el selector en vez de seleccionar. En los slots vacíos sigue
-         activo: ahí tocar sí tiene que abrir el selector. */
-      .photo-slot.has-image input[type="file"] { pointer-events: none; }
+      /* Con foto, el input deja de ser una superficie táctil sobre la imagen:
+         lo sacamos de encima achicándolo a una esquina, en vez de confiar en
+         que z-index/pointer-events lo dejen fuera del camino. El único acceso
+         al selector pasa a ser el 🔄, que es un <label for>.
+         Importante: nada de display:none ni visibility:hidden — Safari no abre
+         el selector desde un <label> si el input no está renderizado.
+         En los slots vacíos el input sigue cubriendo todo: ahí tocar la tarjeta
+         tiene que abrir el selector directamente. */
+      .photo-slot.has-image input[type="file"] {
+        inset: auto auto 0 0; width: 1px; height: 1px; pointer-events: none;
+      }
     }
 
     /* ── TIMELINE ── */
@@ -897,14 +903,17 @@ for (let i = 0; i < PHOTO_SLOTS; i++) {
   slot.className = 'photo-slot';
   slot.id = `slot-${i}`;
   slot.innerHTML = `
-    <input type="file" accept="image/*" data-idx="${i}" />
+    <input type="file" accept="image/*" id="photo-file-${i}" data-idx="${i}" />
     <div class="photo-slot__placeholder">
       <div class="photo-slot__icon">📷</div>
       <span class="photo-slot__hint">${SLOT_HINT}</span>
     </div>
     <div class="photo-slot__uploading"><div class="spinner"></div><span>Subiendo...</span></div>
     <div class="photo-slot__actions">
-      <button class="photo-slot__action-btn replace" title="Reemplazar" onclick="replacePhoto(${i})">🔄</button>
+      <!-- <label for>, no <button onclick>: al tocarlo el navegador activa el
+           input de archivo por su cuenta, sin pasar por un .click() sintético.
+           Es el camino que Safari/iOS acepta siempre para abrir el selector. -->
+      <label class="photo-slot__action-btn replace" for="photo-file-${i}" title="Reemplazar" role="button" aria-label="Reemplazar foto">🔄</label>
       <button class="photo-slot__action-btn delete" title="Eliminar" onclick="deletePhoto(${i})">🗑</button>
     </div>
     <div class="photo-slot__caption-input">
@@ -941,6 +950,9 @@ for (let i = 0; i < PHOTO_SLOTS; i++) {
       console.error(e);
     } finally {
       s.classList.remove('uploading');
+      // Dejamos el input vacío para que volver a elegir EL MISMO archivo
+      // vuelva a disparar 'change'. Antes de esto lo hacía replacePhoto().
+      this.value = '';
     }
   });
 
@@ -988,7 +1000,7 @@ photoGrid.addEventListener('click', e => {
   if (!coarsePointer.matches) return;                        // desktop: manda el :hover
   // Los botones hacen lo suyo (reemplazar abre el selector, eliminar pide
   // confirmación) y no cuentan como "tocar la foto": no cerramos la selección.
-  if (e.target.closest('.photo-slot__action-btn')) return;
+  if (e.target.closest('.photo-slot__actions')) return;
   // Escribir el texto tampoco debe cerrar el slot.
   if (e.target.closest('.photo-slot__caption-input')) return;
 
@@ -996,6 +1008,11 @@ photoGrid.addEventListener('click', e => {
   // Slot vacío: el toque abre el selector de archivos como siempre, y de paso
   // deselecciona la foto que estuviera activa.
   if (!slot || !slot.classList.contains('has-image')) { setActiveSlot(null); return; }
+  // En un slot con foto el input mide 1px y no recibe toques, así que un click
+  // con ese target sólo puede venir del <label> 🔄 reenviando la activación.
+  // No es "tocar la foto": si lo tratáramos como tal cerraríamos los controles
+  // justo cuando se está abriendo el selector.
+  if (e.target.matches('input[type="file"]')) return;
   setActiveSlot(slot === activeSlot ? null : slot);          // segundo toque = cerrar
 });
 
@@ -1043,12 +1060,9 @@ window.deletePhoto = async function(idx) {
   showToast('Foto eliminada');
 };
 
-window.replacePhoto = function(idx) {
-  const slot = document.getElementById(`slot-${idx}`);
-  const fileInput = slot.querySelector('input[type="file"]');
-  fileInput.value = '';
-  fileInput.click();
-};
+// replacePhoto() ya no existe: el botón 🔄 es un <label for> y el navegador
+// abre el selector por su cuenta. Un fileInput.click() sintético es justamente
+// lo que Safari/iOS puede ignorar.
 
 // load photos from firebase (recién cuando la sesión anónima está lista)
 authReady.then(() => {
