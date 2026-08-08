@@ -229,6 +229,67 @@
     .add-reason-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(252,232,243,.5); border: 2px dashed rgba(232,160,191,.5); border-radius: 20px; padding: 32px 28px; cursor: pointer; color: var(--c-rose); font-family: var(--font-ui); font-size: .85rem; letter-spacing: .08em; transition: background .3s; }
     .add-reason-btn:hover { background: rgba(252,232,243,.8); }
 
+    /* ── NOTITAS ── */
+    .notitas-intro { font-family: var(--font-body); font-style: italic; font-size: 1.1rem; color: var(--c-deep); margin-bottom: 48px; max-width: 560px; }
+    .notitas-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 36px; align-items: start; }
+    .notita { display: flex; flex-direction: column; min-width: 0; }
+    .notita__name { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; font-style: italic; color: var(--c-ocean); margin-bottom: 16px; }
+    .notita__paper {
+      position: relative;
+      background: linear-gradient(160deg, rgba(255,255,255,.94), rgba(234,249,252,.86));
+      border: 1px solid rgba(178,236,242,.7);
+      border-radius: 4px 16px 4px 16px;
+      padding: 32px 24px 26px 36px;
+      box-shadow: 0 14px 34px rgba(70,130,180,.13), inset 0 1px 0 rgba(255,255,255,.8);
+      transform: rotate(-.5deg);
+      transition: transform .35s, box-shadow .35s;
+    }
+    .notita:nth-child(even) .notita__paper { transform: rotate(.5deg); }
+    .notita__paper:hover,
+    .notita__paper:focus-within,
+    .notita:nth-child(even) .notita__paper:hover,
+    .notita:nth-child(even) .notita__paper:focus-within { transform: rotate(0); box-shadow: 0 22px 48px rgba(70,130,180,.18); }
+    /* cintita de papel pegada arriba */
+    .notita__paper::before {
+      content: ''; position: absolute; top: -11px; left: 50%; margin-left: -44px;
+      width: 88px; height: 22px; background: rgba(178,236,242,.5);
+      border: 1px solid rgba(255,255,255,.65); border-radius: 2px;
+      transform: rotate(-2deg); pointer-events: none;
+    }
+    /* margen de cuaderno */
+    .notita__paper::after {
+      content: ''; position: absolute; top: 16px; bottom: 16px; left: 21px;
+      width: 1px; background: rgba(232,160,191,.45); pointer-events: none;
+    }
+    .notita__text {
+      display: block; width: 100%; min-height: 172px;
+      background: transparent; border: none; outline: none; resize: vertical;
+      font-family: var(--font-body); font-size: 1.12rem; line-height: 1.75;
+      color: var(--c-ink); padding: 0;
+    }
+    .notita__text::placeholder { color: rgba(70,130,180,.45); font-style: italic; }
+    .notita__meta { font-family: var(--font-ui); font-size: .72rem; letter-spacing: .06em; color: rgba(70,130,180,.8); margin-top: 16px; min-height: 18px; }
+    .notita__error { font-family: var(--font-ui); font-size: .78rem; line-height: 1.5; color: #e06060; margin-top: 8px; }
+    .notita__error:empty { display: none; }
+    .notita__fresh {
+      align-self: flex-start; margin-top: 10px;
+      background: rgba(252,232,243,.55); border: 1px solid rgba(232,160,191,.5);
+      color: var(--c-deep); font-family: var(--font-ui); font-size: .74rem;
+      padding: 9px 18px; min-height: 40px; border-radius: 50px; cursor: pointer;
+      transition: background .25s;
+    }
+    .notita__fresh:hover { background: rgba(252,232,243,.9); }
+    .notita__btn {
+      align-self: flex-start; margin-top: 18px;
+      background: linear-gradient(135deg, var(--c-ocean), var(--c-deep));
+      color: white; border: none; border-radius: 50px;
+      padding: 14px 32px; min-height: 48px;
+      font-family: var(--font-ui); font-size: .85rem; letter-spacing: .1em;
+      cursor: pointer; transition: opacity .2s, transform .2s;
+    }
+    .notita__btn:hover { opacity: .9; transform: translateY(-2px); }
+    .notita__btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
     /* ── COUNTDOWN ── */
     .countdown-section { text-align: center; }
     .countdown-section .section-title { text-align: center; }
@@ -292,6 +353,12 @@
       .add-memory-btn { margin-left: 28px; }
       .cd-box { width: 72px; padding: 18px 10px; }
       .cd-box__num { font-size: 2.2rem; }
+      .notitas-grid { grid-template-columns: 1fr; gap: 34px; }
+      .notita__paper,
+      .notita:nth-child(even) .notita__paper { transform: rotate(0); padding: 28px 20px 24px 32px; }
+      /* 16px mínimo: evita que el teclado del teléfono haga zoom al enfocar */
+      .notita__text { font-size: 1.05rem; min-height: 152px; }
+      .notita__btn, .notita__fresh { width: 100%; text-align: center; }
     }
     @media (max-width: 390px) {
       .hero__counter { width: min(100%, 320px); column-gap: 12px; }
@@ -366,6 +433,44 @@
         <p>Todavia recuerdo como si hubiese sido ayer cuando te lleve arriba para pedirte que seas mi novia y cuando estabamos subiendo las escaleras estaba todo nervioso xd me temblaba hasta el ulo. Hice esta pagina para que podamos ir poniendo recuerdos y cosas lindas que se nos vayan ocurriendo. La idea es que no quede solo como algo lindo de un par de dias, sino algo que vayamos actualizando constantemnente con nuestras cosas. Un espacio solo nuestro <3.</p>
         <p>Gracias por todo Emma. Por cada vez que me hiciste reír, por cada momento en el que estuviste conmigo y por acompañarme todos los dias. Te amo muchisimo.</p>
         <div class="signature">Con todo mi amor 💙</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"><span class="divider__icon">✦</span></div>
+
+  <!-- NOTITAS -->
+  <section class="notitas-section">
+    <div class="section-inner">
+      <p class="section-label reveal">de todos los días</p>
+      <h2 class="section-title reveal"><em>Notitas</em> del día</h2>
+      <p class="notitas-intro reveal">Cada uno tiene su hojita. Escribí lo que quieras y pulsá «Renovar notita»: la otra persona la ve al instante, sin recargar la página 💙</p>
+      <div class="notitas-grid">
+
+        <div class="notita reveal">
+          <h3 class="notita__name">Emma</h3>
+          <div class="notita__paper">
+            <textarea class="notita__text" id="nota-emma-text" rows="6"
+                      placeholder="Escribí tu notita..." aria-label="Notita de Emma"></textarea>
+          </div>
+          <p class="notita__meta" id="nota-emma-meta">Cargando notita...</p>
+          <button type="button" class="notita__fresh" id="nota-emma-fresh" hidden>Hay una versión más nueva · ver</button>
+          <p class="notita__error" id="nota-emma-error"></p>
+          <button type="button" class="notita__btn" id="nota-emma-btn">Renovar notita</button>
+        </div>
+
+        <div class="notita reveal">
+          <h3 class="notita__name">Benicio</h3>
+          <div class="notita__paper">
+            <textarea class="notita__text" id="nota-benicio-text" rows="6"
+                      placeholder="Escribí tu notita..." aria-label="Notita de Benicio"></textarea>
+          </div>
+          <p class="notita__meta" id="nota-benicio-meta">Cargando notita...</p>
+          <button type="button" class="notita__fresh" id="nota-benicio-fresh" hidden>Hay una versión más nueva · ver</button>
+          <p class="notita__error" id="nota-benicio-error"></p>
+          <button type="button" class="notita__btn" id="nota-benicio-btn">Renovar notita</button>
+        </div>
+
       </div>
     </div>
   </section>
@@ -461,7 +566,7 @@
 <!-- Firebase SDKs -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, get, push, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // ── CONFIG ──
@@ -955,6 +1060,111 @@ window.saveReason = async function() {
     btn.disabled = false; btn.textContent = 'Agregar';
   }
 };
+
+// ── NOTITAS ──
+// Una única notita por persona en notes/<persona> (sin pushId): "Renovar notita"
+// sobreescribe siempre el mismo nodo. La interfaz se actualiza con onValue, no
+// con polling ni setInterval.
+const NOTE_PEOPLE = ['emma', 'benicio'];
+const notes = {};   // persona -> { area, btn, meta, err, fresh, remote, dirty }
+
+NOTE_PEOPLE.forEach(person => {
+  const n = {
+    area:   document.getElementById(`nota-${person}-text`),
+    btn:    document.getElementById(`nota-${person}-btn`),
+    meta:   document.getElementById(`nota-${person}-meta`),
+    err:    document.getElementById(`nota-${person}-error`),
+    fresh:  document.getElementById(`nota-${person}-fresh`),
+    remote: '',      // último texto conocido en la base
+    dirty:  false    // la persona escribió algo que todavía no renovó
+  };
+  notes[person] = n;
+
+  n.area.addEventListener('input', () => { n.dirty = true; });
+  n.area.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); renovarNotita(person); }
+  });
+  n.btn.addEventListener('click', () => renovarNotita(person));
+  n.fresh.addEventListener('click', () => {
+    n.area.value = n.remote;
+    n.dirty = false;
+    n.fresh.hidden = true;
+  });
+});
+
+function noteDate(ts) {
+  const d = new Date(ts);
+  if (!ts || isNaN(d.getTime())) return '';
+  return d.toLocaleString('es-AR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+}
+
+function setNoteError(person, msg) {
+  notes[person].err.textContent = msg;   // textContent, nunca innerHTML
+}
+
+// Pinta lo que llegó de Firebase sin pisar lo que la persona esté escribiendo.
+function applyRemoteNote(person, text, updatedAt) {
+  const n = notes[person];
+  n.remote = text;
+  const fecha = noteDate(updatedAt);
+  n.meta.textContent = text
+    ? (fecha ? `Renovada el ${fecha}` : 'Notita guardada')
+    : 'Todavía no hay notita — escribí la primera ✦';
+
+  // Si está escribiendo, avisamos de la versión nueva en vez de borrarle el texto.
+  if ((n.dirty || document.activeElement === n.area) && n.area.value !== text) {
+    n.fresh.hidden = false;
+    return;
+  }
+  n.fresh.hidden = true;
+  n.area.value = text;   // .value / textContent: el texto del usuario nunca pasa por innerHTML
+  n.dirty = false;
+}
+
+async function renovarNotita(person) {
+  const n = notes[person];
+  const text = n.area.value;
+  setNoteError(person, '');
+  n.btn.disabled = true;
+  n.btn.textContent = 'Guardando...';
+  try {
+    await authReady;                       // sin sesión anónima la escritura sería rechazada
+    await set(ref(db, `notes/${person}`), { text, updatedAt: serverTimestamp() });
+    n.dirty = false;                       // el onValue se encarga de repintar
+    showToast('Notita renovada 💙');
+  } catch (e) {
+    console.error(`[firebase] no se pudo guardar "notes/${person}":`, e);
+    setNoteError(person, 'No se pudo guardar la notita. Tu texto sigue acá, probá de nuevo.');
+  } finally {
+    // Pase lo que pase el botón vuelve a estar disponible y con su texto original.
+    n.btn.disabled = false;
+    n.btn.textContent = 'Renovar notita';
+  }
+}
+
+// Tiempo real: un listener por persona. Lo que escriba uno aparece en el
+// dispositivo del otro sin recargar.
+authReady.then(() => {
+  NOTE_PEOPLE.forEach(person => {
+    onValue(ref(db, `notes/${person}`), snap => {
+      const val = snap.val() || {};
+      setNoteError(person, '');
+      applyRemoteNote(person, typeof val.text === 'string' ? val.text : '', val.updatedAt);
+    }, err => {
+      console.error(`[firebase] no se pudo leer "notes/${person}":`, err);
+      notes[person].meta.textContent = '';
+      setNoteError(person, 'No se pudo cargar la notita. Revisá tu conexión y recargá la página.');
+    });
+  });
+});
+
+authReady.catch(() => {
+  // El error ya se logueó en el catch general de arriba; acá solo avisamos en la sección.
+  NOTE_PEOPLE.forEach(person => {
+    notes[person].meta.textContent = '';
+    setNoteError(person, 'No se pudo conectar con Firebase. Recargá la página para volver a intentar.');
+  });
+});
 
 // close modals on outside click
 document.querySelectorAll('.modal-overlay').forEach(o =>
