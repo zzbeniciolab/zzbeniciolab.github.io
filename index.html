@@ -316,7 +316,10 @@
 
     /* ── FOOTER ── */
     footer { text-align: center; padding: 80px 20px 60px; }
-    footer .heart { font-size: 2.5rem; display: block; margin-bottom: 20px; animation: heartbeat 1.4s infinite; }
+    /* inline-block, no block: como block ocupaba todo el ancho del footer y el
+       scale(1.2) del latido lo estiraba ~15px fuera de la pantalla, apareciendo
+       y desapareciendo scroll horizontal en móvil. Así solo escala el emoji. */
+    footer .heart { font-size: 2.5rem; display: inline-block; margin-bottom: 20px; animation: heartbeat 1.4s infinite; }
     @keyframes heartbeat { 0%,100%{transform:scale(1)} 14%{transform:scale(1.2)} 28%{transform:scale(1)} 42%{transform:scale(1.15)} 70%{transform:scale(1)} }
     footer p { font-family: var(--font-display); font-style: italic; font-size: 1.3rem; color: var(--c-ocean); }
 
@@ -434,12 +437,20 @@
       .counter-box__num { font-size: clamp(2.45rem, 13vw, 3.25rem); }
       .counter-box__label { font-size: .62rem; letter-spacing: .18em; }
       .hero__scroll { bottom: 28px; }
-      /* Móvil: una foto por fila. Con 2 columnas cada foto quedaba en ~160px de
-         lado y la última fila se veía cortada; a ancho completo se ven de verdad.
-         4/5 es vertical, que es como salen casi todas las fotos del celular. */
-      .photo-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-      .photo-slot { min-height: 0; aspect-ratio: 4 / 5; border-radius: 20px; }
+      /* Móvil: 2 fotos por fila, lo más grandes posible. El ancho lo fijan las
+         2 columnas, así que lo exprimimos por los costados: gap chico (10px) y
+         la grilla se sale 6px del padding de la sección hacia cada lado. Quedan
+         ~169px a 375px de pantalla, ~176px a 390 y ~196px a 430, sin overflow
+         (la grilla mide 12px más que su contenedor, que tiene 20px de padding).
+         3/4 es la proporción nativa de una foto vertical de celular (sensor
+         4:3): con object-fit: cover la mayoría entra entera, sin recorte, y es
+         la que más superficie da sin estirar de más la sección. */
+      .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-left: -6px; margin-right: -6px; }
+      .photo-slot { min-height: 0; aspect-ratio: 3 / 4; border-radius: 20px; }
       .photo-slot img { border-radius: 18px; }
+      /* El slot mide ~160px: sin achicar el padding el campo de texto queda sin
+         lugar. El font-size se queda en 1rem (18px) para que iOS no haga zoom. */
+      .photo-slot__caption-input { padding: 20px 10px 10px; }
       .photo-slot__caption-input input { font-size: 1rem; }
       .photos-intro { margin-bottom: 32px; }
       .letter-card { padding: 36px 28px; }
@@ -1351,6 +1362,7 @@ observeReveal();
   const STEP_START = 165;   // ms por paso al empezar (cómodo)
   const STEP_MIN   = 95;    // techo de dificultad: rápido pero jugable
   const STEP_DEC   = 4;     // acelera esto por cada corazón
+  const TURN_MIN   = 70;    // ms mínimos entre pasos cuando un giro adelanta el tick
   const MAX_SIZE   = 560;   // el tablero no crece más que esto en desktop
   const BEST_KEY   = 'snake-corazones-best';
 
@@ -1639,6 +1651,16 @@ observeReveal();
         step();
         if (state !== 'playing') { acc = 0; break; }
       }
+      // Un giro pendiente no espera a que termine el paso en curso: recortamos
+      // lo que queda y giramos en este mismo frame. Sin esto, el swipe (o la
+      // flecha) tardaba hasta stepMs() —165ms al empezar— en verse. TURN_MIN es
+      // el colchón que impide que encadenar giros acelere al snake de verdad:
+      // nunca hay dos pasos separados por menos de 70ms. La velocidad base
+      // (STEP_START/STEP_MIN) queda intacta.
+      if (queue.length && acc >= TURN_MIN) {
+        acc = 0;
+        step();
+      }
     }
     updatePops(dt);
 
@@ -1702,7 +1724,9 @@ observeReveal();
   // touchmove con passive:false + preventDefault: mientras jugás, el dedo mueve
   // al snake y nunca scrollea la página de atrás.
   let tx = 0, ty = 0, tracking = false;
-  const SWIPE = 24;
+  // 24px obligaba a un swipe largo antes de que el giro se registrara siquiera.
+  // 14px sigue estando muy por encima del temblor de un dedo apoyado (<10px).
+  const SWIPE = 14;
 
   overlay.addEventListener('touchstart', e => {
     if (e.touches.length !== 1) { tracking = false; return; }
