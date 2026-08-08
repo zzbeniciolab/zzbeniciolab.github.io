@@ -263,6 +263,9 @@
     .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--c-deep); color: white; font-family: var(--font-ui); font-size: .85rem; padding: 12px 28px; border-radius: 50px; opacity: 0; transition: opacity .3s, transform .3s; z-index: 999; pointer-events: none; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    /* ── ERROR DE CARGA ── */
+    .load-error { font-family: var(--font-ui); font-size: .9rem; line-height: 1.6; color: #e06060; padding: 18px 0; }
+
     /* ── REVEAL ── */
     .reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s, transform .7s; }
     .reveal.visible { opacity: 1; transform: translateY(0); }
@@ -459,6 +462,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set, get, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // ── CONFIG ──
 const IMGBB_KEY = '14ea682410be24d11c2a593bc4b4b932';
@@ -474,8 +478,9 @@ const firebaseConfig = {
   appId: "1:490320217735:web:db5056b02b7d4bf2725a22"
 };
 
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
+const app  = initializeApp(firebaseConfig);
+const db   = getDatabase(app);
+const auth = getAuth(app);
 
 // ── UTILS ──
 function showToast(msg) {
@@ -483,6 +488,37 @@ function showToast(msg) {
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
+
+// ── AUTH ANÓNIMA ──
+// Las reglas de Realtime Database exigen auth != null, así que TODA lectura y
+// escritura tiene que esperar a esta promesa antes de tocar la base.
+const authReady = new Promise((resolve, reject) => {
+  onAuthStateChanged(auth, user => { if (user) resolve(user); }, reject);
+  signInAnonymously(auth).catch(reject);
+});
+
+function showLoadError(container, msg) {
+  if (!container) return;
+  container.innerHTML = '';
+  const p = document.createElement('p');
+  p.className = 'load-error';
+  p.textContent = msg;
+  container.appendChild(p);
+}
+
+// Callback de error compartido por los tres onValue: nunca falla en silencio.
+function handleLoadError(label, container, err) {
+  console.error(`[firebase] no se pudo leer "${label}":`, err);
+  showToast('No se pudieron cargar los datos 💔');
+  showLoadError(container, 'No se pudieron cargar los datos. Revisá tu conexión y recargá la página.');
+}
+
+authReady.catch(err => {
+  console.error('[firebase] falló el inicio de sesión anónimo:', err);
+  showToast('No se pudo conectar. Recargá la página 💙');
+  showLoadError(document.getElementById('timeline'),    'No se pudo iniciar sesión. Recargá la página.');
+  showLoadError(document.getElementById('reasonsGrid'), 'No se pudo iniciar sesión. Recargá la página.');
+});
 
 // ── LOCK ──
 window.tryUnlock = function() {
@@ -564,6 +600,9 @@ setInterval(updateCountdown, 1000);
 const SLOT_HINTS = ['insertar foto','insertar foto','insertar foto','insertar foto','insertar foto','insertar foto','insertar foto', 'insertar foto', 'insertar foto'];
 const photoGrid = document.getElementById('photoGrid');
 const photoURLs = {};
+// Espejo del caption que hay en la base. Mientras un slot siga en `undefined`
+// significa que todavía no leímos Firebase y no debemos escribir ese caption.
+const photoCaptions = {};
 
 // Cambiar el 7 por un 9
 for (let i = 0; i < 9; i++) {
@@ -597,6 +636,7 @@ for (let i = 0; i < 9; i++) {
     s.classList.add('uploading');
 
     try {
+      await authReady;                       // sin sesión, la escritura sería rechazada
       // upload to imgbb
       const formData = new FormData();
       formData.append('image', file);
@@ -607,6 +647,7 @@ for (let i = 0; i < 9; i++) {
 
       // save url to firebase
       await set(ref(db, `photos/slot_${idx}/url`), url);
+      photoURLs[idx] = url;
       setPhoto(idx, url);
       showToast('Foto guardada 💙');
     } catch(e) {
@@ -619,8 +660,26 @@ for (let i = 0; i < 9; i++) {
 
   // caption listener — save on blur
   slot.querySelector('input[data-cap]').addEventListener('blur', async function() {
-    const idx = parseInt(this.dataset.cap);
-    await set(ref(db, `photos/slot_${idx}/caption`), this.value);
+    const idx     = parseInt(this.dataset.cap);
+    const value   = this.value;
+    const enBase  = photoCaptions[idx];
+
+    // Todavía no leímos Firebase: el input está vacío porque no cargó, no porque
+    // el usuario lo haya borrado. Escribir acá pisaría el caption existente con "".
+    if (enBase === undefined) return;
+    // Sin cambios: no gastamos una escritura.
+    if (value === enBase) return;
+
+    try {
+      await authReady;
+      await set(ref(db, `photos/slot_${idx}/caption`), value);
+      photoCaptions[idx] = value;
+      showToast('Texto guardado 💙');
+    } catch (e) {
+      console.error('[firebase] no se pudo guardar el texto de la foto:', e);
+      this.value = enBase;                   // revertimos a lo que hay en la base
+      showToast('No se pudo guardar el texto');
+    }
   });
 }
 
@@ -634,7 +693,16 @@ function setPhoto(idx, url) {
 
 window.deletePhoto = async function(idx) {
   if (!confirm('¿Eliminar esta foto?')) return;
-  await set(ref(db, `photos/slot_${idx}`), null);
+  try {
+    await authReady;
+    await set(ref(db, `photos/slot_${idx}`), null);
+  } catch (e) {
+    console.error('[firebase] no se pudo eliminar la foto:', e);
+    showToast('No se pudo eliminar la foto');
+    return;
+  }
+  photoURLs[idx] = null;
+  photoCaptions[idx] = '';
   const slot = document.getElementById(`slot-${idx}`);
   const img = slot.querySelector('img');
   if (img) img.remove();
@@ -651,20 +719,41 @@ window.replacePhoto = function(idx) {
   fileInput.click();
 };
 
-// load photos from firebase
-onValue(ref(db, 'photos'), snap => {
-  const data = snap.val() || {};
-  for (let i = 0; i < 9; i++) {
-    const p = data[`slot_${i}`];
-    if (p && p.url) {
-      setPhoto(i, p.url);
+// load photos from firebase (recién cuando la sesión anónima está lista)
+authReady.then(() => {
+  onValue(ref(db, 'photos'), snap => {
+    const data = snap.val() || {};
+    for (let i = 0; i < 9; i++) {
+      const p       = data[`slot_${i}`];
+      const caption = (p && typeof p.caption === 'string') ? p.caption : '';
+
+      // Guardamos el caption siempre, incluso si el slot no tiene url: es lo que
+      // permite que el listener de blur sepa que ya cargó y no lo borre.
+      photoCaptions[i] = caption;
+
       const capInput = document.querySelector(`input[data-cap="${i}"]`);
-      if (capInput && p.caption) capInput.value = p.caption;
+      const editando = capInput && document.activeElement === capInput && capInput.value !== '';
+      if (capInput && !editando) capInput.value = caption;
+
+      if (p && p.url) {
+        photoURLs[i] = p.url;
+        setPhoto(i, p.url);
+      }
     }
-  }
+  }, err => {
+    handleLoadError('photos', null, err);
+    // La grilla de 9 slots ya está en el DOM, así que mostramos el aviso debajo.
+    const aviso = document.createElement('p');
+    aviso.className = 'load-error';
+    aviso.textContent = 'No se pudieron cargar las fotos. Revisá tu conexión y recargá la página.';
+    photoGrid.insertAdjacentElement('afterend', aviso);
+  });
 });
 
 // ── TIMELINE ──
+// NOTA: estos valores quedan solo como referencia. Ya NO se insertan solos en
+// Firebase: la re-siembra automática duplicaba recuerdos y los resucitaba
+// después de borrarlos. Si querés cargarlos, agregalos con "+ Agregar recuerdo".
 const defaultMemories = [
   { month: 'Septiembre 2025', title: 'El comienzo 💙',              desc: 'El día en que todo empezó. El día en que te elegí.' },
   { month: 'Octubre 2025',    title: 'Conociéndonos',               desc: 'Cada conversación, cada risa. Descubriendo quién sos.' },
@@ -708,14 +797,12 @@ function renderTimeline(entries) {
   });
 }
 
-onValue(ref(db, 'memories'), snap => {
-  const data = snap.val();
-  if (data) {
-    const entries = Object.entries(data).map(([key, val]) => ({ key, ...val }));
+authReady.then(() => {
+  onValue(ref(db, 'memories'), snap => {
+    const data = snap.val();
+    const entries = data ? Object.entries(data).map(([key, val]) => ({ key, ...val })) : [];
     renderTimeline(entries);
-  } else {
-    defaultMemories.forEach(m => push(ref(db, 'memories'), m));
-  }
+  }, err => handleLoadError('memories', timeline, err));
 });
 
 let editingMemoryKey = null;
@@ -740,8 +827,14 @@ window.editMemory = function(key, month, title, desc) {
 };
 window.deleteMemory = async function(key) {
   if (!confirm('¿Eliminar este recuerdo?')) return;
-  await set(ref(db, `memories/${key}`), null);
-  showToast('Recuerdo eliminado');
+  try {
+    await authReady;
+    await set(ref(db, `memories/${key}`), null);
+    showToast('Recuerdo eliminado');
+  } catch (e) {
+    console.error('[firebase] no se pudo eliminar el recuerdo:', e);
+    showToast('No se pudo eliminar el recuerdo');
+  }
 };
 window.saveMemory = async function() {
   const month = document.getElementById('mem-month').value.trim();
@@ -749,19 +842,29 @@ window.saveMemory = async function() {
   const desc  = document.getElementById('mem-desc').value.trim();
   if (!title) return;
   const btn = document.getElementById('save-memory-btn');
+  const btnLabel = btn.textContent;
   btn.disabled = true; btn.textContent = 'Guardando...';
-  if (editingMemoryKey) {
-    await set(ref(db, `memories/${editingMemoryKey}`), { month: month || '—', title, desc });
-    editingMemoryKey = null;
-  } else {
-    await push(ref(db, 'memories'), { month: month || '—', title, desc });
+  try {
+    await authReady;
+    if (editingMemoryKey) {
+      await set(ref(db, `memories/${editingMemoryKey}`), { month: month || '—', title, desc });
+      editingMemoryKey = null;
+    } else {
+      await push(ref(db, 'memories'), { month: month || '—', title, desc });
+    }
+    closeMemoryModal();
+    showToast('Recuerdo guardado 💙');
+  } catch (e) {
+    console.error('[firebase] no se pudo guardar el recuerdo:', e);
+    showToast('No se pudo guardar el recuerdo');
+  } finally {
+    btn.disabled = false; btn.textContent = btnLabel;
   }
-  btn.disabled = false;
-  closeMemoryModal();
-  showToast('Recuerdo guardado 💙');
 };
 
 // ── REASONS ──
+// NOTA: igual que defaultMemories, quedan solo como referencia. Ya NO se
+// insertan solas en Firebase (ver comentario en la sección TIMELINE).
 const defaultReasons = [
   'Porque tu sonrisa ilumina cualquier cuarto.',
   'Porque me escuchás de verdad.',
@@ -794,14 +897,14 @@ function renderReasons(entries) {
   observeReveal();
 }
 
-onValue(ref(db, 'reasons'), snap => {
-  const data = snap.val();
-  if (data) {
-    const entries = Object.entries(data).map(([key, val]) => ({ key, text: typeof val === 'string' ? val : val.text || '' }));
+authReady.then(() => {
+  onValue(ref(db, 'reasons'), snap => {
+    const data = snap.val();
+    const entries = data
+      ? Object.entries(data).map(([key, val]) => ({ key, text: typeof val === 'string' ? val : val.text || '' }))
+      : [];
     renderReasons(entries);
-  } else {
-    defaultReasons.forEach(r => push(ref(db, 'reasons'), r));
-  }
+  }, err => handleLoadError('reasons', reasonsGrid, err));
 });
 
 let editingReasonKey = null;
@@ -820,24 +923,37 @@ window.editReason = function(key, text) {
 };
 window.deleteReason = async function(key) {
   if (!confirm('¿Eliminar esta razón?')) return;
-  await set(ref(db, `reasons/${key}`), null);
-  showToast('Razón eliminada');
+  try {
+    await authReady;
+    await set(ref(db, `reasons/${key}`), null);
+    showToast('Razón eliminada');
+  } catch (e) {
+    console.error('[firebase] no se pudo eliminar la razón:', e);
+    showToast('No se pudo eliminar la razón');
+  }
 };
 window.saveReason = async function() {
   const text = document.getElementById('reason-text').value.trim();
   if (!text) return;
   const btn = document.getElementById('save-reason-btn');
   btn.disabled = true; btn.textContent = 'Guardando...';
-  if (editingReasonKey) {
-    await set(ref(db, `reasons/${editingReasonKey}`), text);
-    editingReasonKey = null;
-  } else {
-    await push(ref(db, 'reasons'), text);
+  try {
+    await authReady;
+    if (editingReasonKey) {
+      await set(ref(db, `reasons/${editingReasonKey}`), text);
+      editingReasonKey = null;
+    } else {
+      await push(ref(db, 'reasons'), text);
+    }
+    closeReasonModal();
+    document.getElementById('reason-text').value = '';
+    showToast('Razón guardada 💙');
+  } catch (e) {
+    console.error('[firebase] no se pudo guardar la razón:', e);
+    showToast('No se pudo guardar la razón');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Agregar';
   }
-  btn.disabled = false; btn.textContent = 'Agregar';
-  closeReasonModal();
-  document.getElementById('reason-text').value = '';
-  showToast('Razón guardada 💙');
 };
 
 // close modals on outside click
