@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Emma 💙 9 Meses</title>
+  <title>Emma 💙 12 Meses</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet"/>
   <style>
     :root {
@@ -199,12 +199,25 @@
     .photo-slot__caption-input input::placeholder { color: rgba(255,255,255,.5); }
     .photo-slot input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 2; }
     .photo-slot.has-image input[type="file"] { z-index: 0; }
-    /* En pantallas táctiles no existe :hover, así que reemplazar/eliminar era
-       inalcanzable desde el celular: ahí los botones quedan siempre visibles. */
+    /* En pantallas táctiles no existe :hover. En vez de dejar los botones
+       siempre encima de la foto, el JS marca el slot tocado con .is-active
+       (tipo reproductor de video): primer toque muestra los controles, segundo
+       los oculta, y sólo una foto puede estar activa a la vez. */
     @media (hover: none) {
-      .photo-slot.has-image .photo-slot__actions { display: flex; }
-      .photo-slot__action-btn { width: 38px; height: 38px; font-size: 1rem; box-shadow: 0 4px 12px rgba(26,42,58,.25); }
+      .photo-slot.has-image .photo-slot__actions { display: none; }
+      .photo-slot.has-image.is-active .photo-slot__actions { display: flex; }
+      /* Que se vea claro cuál está seleccionada: borde lleno + anillo. */
+      .photo-slot.is-active {
+        border-style: solid; border-color: var(--c-ocean);
+        box-shadow: 0 0 0 3px rgba(70,130,180,.35), 0 14px 34px rgba(70,130,180,.22);
+      }
+      .photo-slot__action-btn { width: 44px; height: 44px; font-size: 1.05rem; box-shadow: 0 4px 12px rgba(26,42,58,.25); }
       .photo-slot__action-btn.replace { background: rgba(255,255,255,.95); }
+      /* El input de archivo queda pintado por encima de la foto (mismo nivel
+         que el <img> pero después en el DOM), así que sin esto el primer toque
+         abriría el selector en vez de seleccionar. En los slots vacíos sigue
+         activo: ahí tocar sí tiene que abrir el selector. */
+      .photo-slot.has-image input[type="file"] { pointer-events: none; }
     }
 
     /* ── TIMELINE ── */
@@ -438,14 +451,21 @@
       .counter-box__label { font-size: .62rem; letter-spacing: .18em; }
       .hero__scroll { bottom: 28px; }
       /* Móvil: 2 fotos por fila, lo más grandes posible. El ancho lo fijan las
-         2 columnas, así que lo exprimimos por los costados: gap chico (10px) y
-         la grilla se sale 6px del padding de la sección hacia cada lado. Quedan
-         ~169px a 375px de pantalla, ~176px a 390 y ~196px a 430, sin overflow
-         (la grilla mide 12px más que su contenedor, que tiene 20px de padding).
+         2 columnas, así que lo exprimimos por los costados sin tocar el padding
+         general de la página: la grilla se sale del padding de 20px de section
+         con margen negativo y queda a --photo-edge del borde del viewport.
+         Quedan ~175px de foto a 375px de pantalla, ~182px a 390, ~184px a 393 y
+         ~202px a 430, sin overflow horizontal.
          3/4 es la proporción nativa de una foto vertical de celular (sensor
          4:3): con object-fit: cover la mayoría entra entera, sin recorte, y es
          la que más superficie da sin estirar de más la sección. */
-      .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-left: -6px; margin-right: -6px; }
+      .photo-grid {
+        --photo-edge: 8px;                              /* margen lateral real de la galería */
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-left:  calc(var(--photo-edge) - 20px);   /* 20px = padding lateral de section */
+        margin-right: calc(var(--photo-edge) - 20px);
+      }
       .photo-slot { min-height: 0; aspect-ratio: 3 / 4; border-radius: 20px; }
       .photo-slot img { border-radius: 18px; }
       /* El slot mide ~160px: sin achicar el padding el campo de texto queda sin
@@ -508,7 +528,7 @@
   <!-- HERO -->
   <section class="hero">
     <div class="hero__deco-line"></div>
-    <p class="hero__tag">6 de junio · 9 meses</p>
+    <p class="hero__tag">6 de septiembre · 12 meses</p>
     <h1 class="hero__title">Para<br/><em>Emma</em></h1>
     <p class="hero__subtitle">con todo el amor que te tengo</p>
 <div class="hero__counter">
@@ -643,14 +663,14 @@
   <section class="countdown-section">
     <div class="section-inner">
       <p class="section-label" style="text-align:center">Falta poquito carmine</p>
-      <h2 class="section-title reveal">Cuenta regresiva<br/>al <em>6 de junio</em></h2>
+      <h2 class="section-title reveal">Cuenta regresiva<br/>al <em>6 de septiembre</em></h2>
       <div class="countdown-grid">
         <div class="cd-box"><div class="cd-box__num" id="cd-d">—</div><div class="cd-box__label">Días</div></div>
         <div class="cd-box"><div class="cd-box__num" id="cd-h">—</div><div class="cd-box__label">Horas</div></div>
         <div class="cd-box"><div class="cd-box__num" id="cd-m">—</div><div class="cd-box__label">Min</div></div>
         <div class="cd-box"><div class="cd-box__num" id="cd-s">—</div><div class="cd-box__label">Seg</div></div>
       </div>
-      <p class="countdown-note">¡Nueve meses!😁</p>
+      <p class="countdown-note">¡Doce meses!😁</p>
     </div>
   </section>
 
@@ -839,11 +859,15 @@ window.toggleLockVis = function() {
   setTimeout(tick, 30000); // actualiza cada 30 segundos
 })();
 
-// ── COUNTDOWN AL 6 DE JUNIO 2026 ──
+// ── COUNTDOWN AL 6 DE SEPTIEMBRE 2026 (aniversario de 12 meses) ──
+// Fuente única de la fecha. Sin sufijo Z ni offset a propósito: así el string
+// se interpreta en la zona horaria del navegador y en Argentina cae el 6 de
+// septiembre a las 00:00 locales, no un día antes por UTC.
+const COUNTDOWN_TARGET = new Date('2026-09-06T00:00:00');
+
 function updateCountdown() {
-  const target = new Date('2026-06-06T00:00:00');
   const now    = new Date();
-  const diff   = target - now;
+  const diff   = COUNTDOWN_TARGET - now;
   if (diff <= 0) {
     ['cd-d','cd-h','cd-m','cd-s'].forEach(id => document.getElementById(id).textContent = '0');
     return;
@@ -945,6 +969,43 @@ for (let i = 0; i < PHOTO_SLOTS; i++) {
   });
 }
 
+// ── SELECCIÓN DE FOTO EN TÁCTIL ──
+// En desktop no cambia nada: los controles siguen apareciendo con :hover.
+// En pantallas sin hover el CSS los esconde y los muestra sólo con .is-active,
+// que se maneja acá. Usamos únicamente 'click' (y no touchstart + click) para
+// que un toque no active dos veces; el click sintético del navegador llega una
+// sola vez después del toque.
+let activeSlot = null;
+const coarsePointer = window.matchMedia('(hover: none)');   // se consulta en vivo
+
+function setActiveSlot(slot) {
+  if (activeSlot && activeSlot !== slot) activeSlot.classList.remove('is-active');
+  activeSlot = slot || null;
+  if (activeSlot) activeSlot.classList.add('is-active');
+}
+
+photoGrid.addEventListener('click', e => {
+  if (!coarsePointer.matches) return;                        // desktop: manda el :hover
+  // Los botones hacen lo suyo (reemplazar abre el selector, eliminar pide
+  // confirmación) y no cuentan como "tocar la foto": no cerramos la selección.
+  if (e.target.closest('.photo-slot__action-btn')) return;
+  // Escribir el texto tampoco debe cerrar el slot.
+  if (e.target.closest('.photo-slot__caption-input')) return;
+
+  const slot = e.target.closest('.photo-slot');
+  // Slot vacío: el toque abre el selector de archivos como siempre, y de paso
+  // deselecciona la foto que estuviera activa.
+  if (!slot || !slot.classList.contains('has-image')) { setActiveSlot(null); return; }
+  setActiveSlot(slot === activeSlot ? null : slot);          // segundo toque = cerrar
+});
+
+// Tocar fuera de la galería cierra la selección.
+document.addEventListener('click', e => {
+  if (!activeSlot) return;
+  if (e.target.closest('.photo-slot')) return;               // ya lo manejó el listener de arriba
+  setActiveSlot(null);
+});
+
 function setPhoto(idx, url) {
   const slot = document.getElementById(`slot-${idx}`);
   let img = slot.querySelector('img');
@@ -961,6 +1022,7 @@ function clearPhoto(idx) {
   const img = slot.querySelector('img');
   if (img) img.remove();
   slot.classList.remove('has-image');
+  if (slot === activeSlot) setActiveSlot(null);   // sin foto no hay nada que seleccionar
 }
 
 window.deletePhoto = async function(idx) {
