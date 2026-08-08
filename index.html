@@ -199,6 +199,13 @@
     .photo-slot__caption-input input::placeholder { color: rgba(255,255,255,.5); }
     .photo-slot input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 2; }
     .photo-slot.has-image input[type="file"] { z-index: 0; }
+    /* En pantallas táctiles no existe :hover, así que reemplazar/eliminar era
+       inalcanzable desde el celular: ahí los botones quedan siempre visibles. */
+    @media (hover: none) {
+      .photo-slot.has-image .photo-slot__actions { display: flex; }
+      .photo-slot__action-btn { width: 38px; height: 38px; font-size: 1rem; box-shadow: 0 4px 12px rgba(26,42,58,.25); }
+      .photo-slot__action-btn.replace { background: rgba(255,255,255,.95); }
+    }
 
     /* ── TIMELINE ── */
     .timeline { position: relative; padding-left: 40px; margin-top: 16px; }
@@ -216,6 +223,14 @@
     .action-link.danger { color: #e06060; }
     .reason-card__actions { display: none; gap: 8px; margin-top: 12px; }
     .reason-card:hover .reason-card__actions { display: flex; }
+    /* Igual que en las fotos: sin :hover en pantallas táctiles, editar y eliminar
+       eran inalcanzables desde el celular. Acá quedan siempre visibles y con un
+       área de toque cómoda. */
+    @media (hover: none) {
+      .timeline-item__actions,
+      .reason-card__actions { display: flex; gap: 20px; }
+      .action-link { padding: 10px 0; min-height: 40px; opacity: .85; }
+    }
     .add-memory-btn { display: inline-flex; align-items: center; gap: 10px; background: rgba(70,130,180,.1); border: 1px solid rgba(70,130,180,.3); color: var(--c-ocean); font-family: var(--font-ui); font-size: .85rem; letter-spacing: .08em; padding: 12px 24px; border-radius: 50px; cursor: pointer; transition: background .3s, transform .2s; margin-left: 40px; }
     .add-memory-btn:hover { background: rgba(70,130,180,.2); transform: translateY(-2px); }
 
@@ -320,6 +335,75 @@
     .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
     .btn-secondary { background: transparent; border: 1px solid rgba(70,130,180,.3); color: var(--c-ocean); border-radius: 50px; padding: 14px 24px; font-family: var(--font-ui); font-size: .85rem; cursor: pointer; }
 
+    /* ── SNAKE ── */
+    .snake-section { text-align: center; }
+    .snake-section .section-title, .snake-section .section-label { text-align: center; }
+    .snake-intro { font-family: var(--font-body); font-style: italic; font-size: 1.1rem; color: var(--c-deep); max-width: 480px; margin: 0 auto 36px; }
+    .snake-open-btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: linear-gradient(135deg, var(--c-ocean), var(--c-deep));
+      color: #fff; border: none; border-radius: 50px;
+      padding: 16px 38px; min-height: 52px;
+      font-family: var(--font-ui); font-size: .9rem; letter-spacing: .12em;
+      cursor: pointer; box-shadow: 0 14px 34px rgba(70,130,180,.22);
+      transition: opacity .2s, transform .2s;
+    }
+    .snake-open-btn:hover { opacity: .92; transform: translateY(-2px); }
+    .snake-best-line { font-family: var(--font-ui); font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; color: rgba(70,130,180,.85); margin-top: 20px; min-height: 18px; }
+
+    .snake-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: linear-gradient(165deg, #eaf9fc 0%, #d6f7ff 55%, #fce8f3 100%);
+      flex-direction: column; align-items: center;
+      padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+      touch-action: none; overscroll-behavior: contain;
+      animation: fadeUp .3s ease;
+    }
+    .snake-overlay.active { display: flex; }
+    body.snake-open { overflow: hidden; }
+    .snake-topbar { width: 100%; max-width: 560px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: 0 0 auto; }
+    .snake-heading { font-family: var(--font-display); font-size: 1.45rem; font-weight: 400; color: var(--c-ink); line-height: 1.1; }
+    .snake-heading em { font-style: italic; color: var(--c-ocean); }
+    .snake-close {
+      width: 46px; height: 46px; flex: 0 0 auto; border-radius: 50%;
+      border: 1px solid rgba(70,130,180,.28); background: rgba(255,255,255,.8);
+      color: var(--c-deep); font-family: var(--font-ui); font-size: 1.15rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background .2s, transform .2s;
+    }
+    .snake-close:hover { background: #fff; transform: scale(1.06); }
+    .snake-hud { width: 100%; max-width: 560px; display: flex; gap: 12px; margin: 12px 0 10px; flex: 0 0 auto; }
+    .snake-stat { flex: 1; background: rgba(255,255,255,.7); border: 1px solid rgba(178,236,242,.75); border-radius: 16px; padding: 10px 12px; }
+    .snake-stat__label { font-family: var(--font-ui); font-size: .6rem; letter-spacing: .22em; text-transform: uppercase; color: var(--c-deep); margin-bottom: 4px; }
+    .snake-stat__num { font-family: var(--font-display); font-size: 1.7rem; font-weight: 700; color: var(--c-ocean); line-height: 1; }
+
+    .snake-board-wrap { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
+    .snake-board { position: relative; }
+    #snakeCanvas {
+      display: block; border-radius: 24px; touch-action: none;
+      background: rgba(255,255,255,.7); border: 1px solid rgba(178,236,242,.9);
+      box-shadow: 0 24px 60px rgba(70,130,180,.16);
+    }
+    .snake-screen {
+      position: absolute; inset: 0; border-radius: 24px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; text-align: center; padding: 22px;
+      background: rgba(234,249,252,.88); backdrop-filter: blur(6px);
+    }
+    .snake-screen[hidden] { display: none; }
+    .snake-screen__icon { font-size: 2.4rem; }
+    .snake-screen__title { font-family: var(--font-display); font-size: 1.8rem; font-weight: 400; color: var(--c-ink); }
+    .snake-screen__title em { font-style: italic; color: var(--c-ocean); }
+    .snake-screen__text { font-family: var(--font-body); font-style: italic; font-size: 1.05rem; line-height: 1.6; color: var(--c-deep); max-width: 280px; }
+    .snake-screen__btn {
+      margin-top: 4px; background: linear-gradient(135deg, var(--c-ocean), var(--c-deep));
+      color: #fff; border: none; border-radius: 50px; padding: 14px 34px; min-height: 48px;
+      font-family: var(--font-ui); font-size: .85rem; letter-spacing: .12em; cursor: pointer;
+      transition: opacity .2s, transform .2s;
+    }
+    .snake-screen__btn:hover { opacity: .92; transform: translateY(-2px); }
+    .snake-hint { flex: 0 0 auto; font-family: var(--font-ui); font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; color: rgba(70,130,180,.75); margin-top: 12px; text-align: center; }
+
     /* ── TOAST ── */
     .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--c-deep); color: white; font-family: var(--font-ui); font-size: .85rem; padding: 12px 28px; border-radius: 50px; opacity: 0; transition: opacity .3s, transform .3s; z-index: 999; pointer-events: none; }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -330,6 +414,11 @@
     /* ── REVEAL ── */
     .reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s, transform .7s; }
     .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* Tablet / pantallas medianas: paso intermedio entre 3 y 1 columna. */
+    @media (max-width: 980px) {
+      .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    }
 
     @media (max-width: 700px) {
       .hero { min-height: 100svh; justify-content: flex-start; padding: 38px 18px 92px; }
@@ -345,9 +434,14 @@
       .counter-box__num { font-size: clamp(2.45rem, 13vw, 3.25rem); }
       .counter-box__label { font-size: .62rem; letter-spacing: .18em; }
       .hero__scroll { bottom: 28px; }
-      .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-      .photo-slot:last-child:nth-child(odd) { grid-column: 1 / -1; aspect-ratio: 2 / 1; }
-      .photo-slot { min-height: 0; }
+      /* Móvil: una foto por fila. Con 2 columnas cada foto quedaba en ~160px de
+         lado y la última fila se veía cortada; a ancho completo se ven de verdad.
+         4/5 es vertical, que es como salen casi todas las fotos del celular. */
+      .photo-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+      .photo-slot { min-height: 0; aspect-ratio: 4 / 5; border-radius: 20px; }
+      .photo-slot img { border-radius: 18px; }
+      .photo-slot__caption-input input { font-size: 1rem; }
+      .photos-intro { margin-bottom: 32px; }
       .letter-card { padding: 36px 28px; }
       .timeline { padding-left: 28px; }
       .add-memory-btn { margin-left: 28px; }
@@ -359,6 +453,15 @@
       /* 16px mínimo: evita que el teclado del teléfono haga zoom al enfocar */
       .notita__text { font-size: 1.05rem; min-height: 152px; }
       .notita__btn, .notita__fresh { width: 100%; text-align: center; }
+      .snake-intro { margin-bottom: 28px; }
+      .snake-open-btn { width: 100%; max-width: 320px; justify-content: center; }
+      .snake-overlay { padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px)); }
+      .snake-heading { font-size: 1.2rem; }
+      .snake-hud { margin: 10px 0 8px; gap: 10px; }
+      .snake-stat { padding: 8px 10px; }
+      .snake-stat__num { font-size: 1.45rem; }
+      .snake-screen__title { font-size: 1.55rem; }
+      .snake-hint { margin-top: 10px; }
     }
     @media (max-width: 390px) {
       .hero__counter { width: min(100%, 320px); column-gap: 12px; }
@@ -512,6 +615,19 @@
 
   <div class="divider"><span class="divider__icon">✦</span></div>
 
+  <!-- SNAKE -->
+  <section class="snake-section">
+    <div class="section-inner reveal">
+      <p class="section-label">para cuando te aburras</p>
+      <h2 class="section-title">Snake de <em>corazones</em></h2>
+      <p class="snake-intro">Un jueguito nuestro: juntá todos los corazones que puedas sin chocarte. En la compu con las flechas, en el celu deslizando el dedo 💙</p>
+      <button type="button" class="snake-open-btn" id="snakeOpenBtn">🎮 Jugar Snake</button>
+      <p class="snake-best-line" id="snakeBestLine"></p>
+    </div>
+  </section>
+
+  <div class="divider"><span class="divider__icon">✦</span></div>
+
   <!-- COUNTDOWN -->
   <section class="countdown-section">
     <div class="section-inner">
@@ -561,6 +677,36 @@
       <button class="btn-primary" id="save-reason-btn" onclick="saveReason()">Agregar</button>
     </div>
   </div>
+</div>
+
+<!-- SNAKE -->
+<div class="snake-overlay" id="snakeOverlay" role="dialog" aria-modal="true" aria-label="Snake de corazones">
+  <div class="snake-topbar">
+    <h2 class="snake-heading">Snake de <em>corazones</em></h2>
+    <button type="button" class="snake-close" id="snakeCloseBtn" aria-label="Volver a la página">✕</button>
+  </div>
+  <div class="snake-hud">
+    <div class="snake-stat">
+      <div class="snake-stat__label">Corazones</div>
+      <div class="snake-stat__num" id="snakeScore">0</div>
+    </div>
+    <div class="snake-stat">
+      <div class="snake-stat__label">Récord</div>
+      <div class="snake-stat__num" id="snakeBest">0</div>
+    </div>
+  </div>
+  <div class="snake-board-wrap" id="snakeBoardWrap">
+    <div class="snake-board" id="snakeBoard">
+      <canvas id="snakeCanvas"></canvas>
+      <div class="snake-screen" id="snakeScreen">
+        <div class="snake-screen__icon" id="snakeScreenIcon">💙</div>
+        <h3 class="snake-screen__title" id="snakeScreenTitle">Juntá <em>corazones</em></h3>
+        <p class="snake-screen__text" id="snakeScreenText">Cuidado con las paredes y con tu propia cola.</p>
+        <button type="button" class="snake-screen__btn" id="snakeScreenBtn">Empezar</button>
+      </div>
+    </div>
+  </div>
+  <p class="snake-hint" id="snakeHint">Flechas o WASD para moverte</p>
 </div>
 
 <!-- Firebase SDKs -->
@@ -700,26 +846,26 @@ updateCountdown();
 setInterval(updateCountdown, 1000);
 
 // ── PHOTO GRID ──
-// ── PHOTO GRID ──
-// Cambiamos a 9 textos para los 9 espacios
-const SLOT_HINTS = ['insertar foto','insertar foto','insertar foto','insertar foto','insertar foto','insertar foto','insertar foto', 'insertar foto', 'insertar foto'];
+// Un único número manda: la grilla, el listener de Firebase y los slots nuevos
+// salen todos de acá. Los slots viven en photos/slot_0 … photos/slot_<N-1>;
+// subir de 9 a 12 solo agrega slot_9…slot_11 vacíos, no toca los anteriores.
+const PHOTO_SLOTS = 12;
+const SLOT_HINT   = 'insertar foto';
 const photoGrid = document.getElementById('photoGrid');
 const photoURLs = {};
 // Espejo del caption que hay en la base. Mientras un slot siga en `undefined`
 // significa que todavía no leímos Firebase y no debemos escribir ese caption.
 const photoCaptions = {};
 
-// Cambiar el 7 por un 9
-for (let i = 0; i < 9; i++) {
+for (let i = 0; i < PHOTO_SLOTS; i++) {
   const slot = document.createElement('div');
   slot.className = 'photo-slot';
-  // ... (el resto del código queda igual adentro del for)
   slot.id = `slot-${i}`;
   slot.innerHTML = `
     <input type="file" accept="image/*" data-idx="${i}" />
     <div class="photo-slot__placeholder">
       <div class="photo-slot__icon">📷</div>
-      <span class="photo-slot__hint">${SLOT_HINTS[i]}</span>
+      <span class="photo-slot__hint">${SLOT_HINT}</span>
     </div>
     <div class="photo-slot__uploading"><div class="spinner"></div><span>Subiendo...</span></div>
     <div class="photo-slot__actions">
@@ -796,6 +942,16 @@ function setPhoto(idx, url) {
   slot.classList.add('has-image');
 }
 
+// Deja el slot como recién puesto: sin imagen y sin texto. Lo usan tanto el
+// borrado propio como el listener cuando la foto se borró desde el otro celular.
+function clearPhoto(idx) {
+  const slot = document.getElementById(`slot-${idx}`);
+  if (!slot) return;
+  const img = slot.querySelector('img');
+  if (img) img.remove();
+  slot.classList.remove('has-image');
+}
+
 window.deletePhoto = async function(idx) {
   if (!confirm('¿Eliminar esta foto?')) return;
   try {
@@ -808,11 +964,8 @@ window.deletePhoto = async function(idx) {
   }
   photoURLs[idx] = null;
   photoCaptions[idx] = '';
-  const slot = document.getElementById(`slot-${idx}`);
-  const img = slot.querySelector('img');
-  if (img) img.remove();
-  slot.classList.remove('has-image');
-  const capInput = slot.querySelector('input[data-cap]');
+  clearPhoto(idx);
+  const capInput = document.querySelector(`input[data-cap="${idx}"]`);
   if (capInput) capInput.value = '';
   showToast('Foto eliminada');
 };
@@ -828,7 +981,7 @@ window.replacePhoto = function(idx) {
 authReady.then(() => {
   onValue(ref(db, 'photos'), snap => {
     const data = snap.val() || {};
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < PHOTO_SLOTS; i++) {
       const p       = data[`slot_${i}`];
       const caption = (p && typeof p.caption === 'string') ? p.caption : '';
 
@@ -843,11 +996,17 @@ authReady.then(() => {
       if (p && p.url) {
         photoURLs[i] = p.url;
         setPhoto(i, p.url);
+      } else {
+        // La foto se borró desde el otro celular: la sacamos en el acto, sin F5.
+        // El caption ya quedó vacío unas líneas más arriba. clearPhoto no hace
+        // nada si el slot ya estaba vacío.
+        photoURLs[i] = null;
+        clearPhoto(i);
       }
     }
   }, err => {
     handleLoadError('photos', null, err);
-    // La grilla de 9 slots ya está en el DOM, así que mostramos el aviso debajo.
+    // La grilla ya está en el DOM, así que mostramos el aviso debajo.
     const aviso = document.createElement('p');
     aviso.className = 'load-error';
     aviso.textContent = 'No se pudieron cargar las fotos. Revisá tu conexión y recargá la página.';
@@ -1179,6 +1338,412 @@ function observeReveal() {
   document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 }
 observeReveal();
+</script>
+
+<!-- ── SNAKE DE CORAZONES ──
+     Script clásico y aparte del módulo de Firebase a propósito: el juego es
+     100% local (localStorage) y así ninguno de los dos puede romper al otro. -->
+<script>
+(function () {
+  'use strict';
+
+  const GRID       = 16;    // tablero 16x16
+  const STEP_START = 165;   // ms por paso al empezar (cómodo)
+  const STEP_MIN   = 95;    // techo de dificultad: rápido pero jugable
+  const STEP_DEC   = 4;     // acelera esto por cada corazón
+  const MAX_SIZE   = 560;   // el tablero no crece más que esto en desktop
+  const BEST_KEY   = 'snake-corazones-best';
+
+  const overlay   = document.getElementById('snakeOverlay');
+  const canvas    = document.getElementById('snakeCanvas');
+  const boardWrap = document.getElementById('snakeBoardWrap');
+  const openBtn   = document.getElementById('snakeOpenBtn');
+  const closeBtn  = document.getElementById('snakeCloseBtn');
+  const scoreEl   = document.getElementById('snakeScore');
+  const bestEl    = document.getElementById('snakeBest');
+  const bestLine  = document.getElementById('snakeBestLine');
+  const hintEl    = document.getElementById('snakeHint');
+  const screen    = document.getElementById('snakeScreen');
+  const screenIcon= document.getElementById('snakeScreenIcon');
+  const screenTtl = document.getElementById('snakeScreenTitle');
+  const screenTxt = document.getElementById('snakeScreenText');
+  const screenBtn = document.getElementById('snakeScreenBtn');
+  const ctx       = canvas.getContext('2d');
+
+  let snake = [], prev = [];          // prev = posiciones del paso anterior (para interpolar)
+  let dir   = { x: 1, y: 0 };
+  let queue = [];                     // giros pendientes: evita perder un input rápido
+  let food  = { x: 0, y: 0 };
+  let pops  = [];                     // corazoncitos que saltan al comer
+  let score = 0, best = loadBest();
+  let state = 'idle';                 // idle | playing | paused | over
+  let acc = 0, last = 0, rafId = null;
+  let size = 0, cell = 0;
+  let screenAction = start;
+
+  // ── PERSISTENCIA LOCAL ──
+  function loadBest() {
+    try { return parseInt(localStorage.getItem(BEST_KEY), 10) || 0; } catch (e) { return 0; }
+  }
+  function saveBest(v) {
+    try { localStorage.setItem(BEST_KEY, String(v)); } catch (e) { /* modo privado: no pasa nada */ }
+  }
+
+  // ── HUD ──
+  function updateHud() {
+    scoreEl.textContent = score;
+    bestEl.textContent  = best;
+    bestLine.textContent = best > 0
+      ? `Tu récord: ${best} ${best === 1 ? 'corazón' : 'corazones'}`
+      : 'Todavía no jugaste ninguna partida';
+  }
+
+  function showScreen(icon, title, text, btnLabel, action) {
+    screenIcon.textContent = icon;
+    screenTtl.innerHTML    = title;   // solo texto nuestro, nunca del usuario
+    screenTxt.textContent  = text;
+    screenBtn.textContent  = btnLabel;
+    screenAction = action;
+    screen.hidden = false;
+  }
+
+  // ── TABLERO ──
+  function layout() {
+    // Medimos con el canvas colapsado para que su tamaño anterior no infle al wrapper.
+    canvas.style.width = '0px';
+    canvas.style.height = '0px';
+    const r = boardWrap.getBoundingClientRect();
+    let s = Math.min(r.width, r.height, MAX_SIZE);
+    s = Math.max(GRID * 12, Math.floor(s / GRID) * GRID);   // múltiplo exacto de GRID: celdas nítidas
+    size = s;
+    cell = s / GRID;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.style.width  = s + 'px';
+    canvas.style.height = s + 'px';
+    canvas.width  = Math.round(s * dpr);
+    canvas.height = Math.round(s * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  // ── LÓGICA ──
+  function reset() {
+    const mid = Math.floor(GRID / 2);
+    snake = [{ x: mid, y: mid }, { x: mid - 1, y: mid }, { x: mid - 2, y: mid }];
+    prev  = snake.map(s => ({ x: s.x, y: s.y }));
+    dir   = { x: 1, y: 0 };
+    queue = []; pops = []; score = 0; acc = 0;
+    placeFood();
+    updateHud();
+  }
+
+  function placeFood() {
+    const free = [];
+    for (let y = 0; y < GRID; y++) {
+      for (let x = 0; x < GRID; x++) {
+        if (!snake.some(s => s.x === x && s.y === y)) free.push({ x, y });
+      }
+    }
+    if (!free.length) return;                       // tablero lleno: partida perfecta
+    food = free[Math.floor(Math.random() * free.length)];
+  }
+
+  function stepMs() {
+    return Math.max(STEP_MIN, STEP_START - score * STEP_DEC);
+  }
+
+  // Encola un giro descartando el 180° (sería suicidio instantáneo) y el repetido.
+  function pushDir(x, y) {
+    const ref = queue.length ? queue[queue.length - 1] : dir;
+    if (x === -ref.x && y === -ref.y) return;
+    if (x ===  ref.x && y ===  ref.y) return;
+    if (queue.length < 3) queue.push({ x, y });
+  }
+
+  function step() {
+    prev = snake.map(s => ({ x: s.x, y: s.y }));
+    if (queue.length) dir = queue.shift();
+
+    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+    if (head.x < 0 || head.y < 0 || head.x >= GRID || head.y >= GRID) return gameOver();
+
+    const eats = head.x === food.x && head.y === food.y;
+    // Si no come, la cola se libera en este mismo paso: pisarla no es choque.
+    const body = eats ? snake : snake.slice(0, -1);
+    if (body.some(s => s.x === head.x && s.y === head.y)) return gameOver();
+
+    snake.unshift(head);
+    if (eats) {
+      score++;
+      spawnPops(head);
+      placeFood();
+      updateHud();
+    } else {
+      snake.pop();
+    }
+  }
+
+  function spawnPops(at) {
+    for (let i = 0; i < 7; i++) {
+      const a = Math.random() * Math.PI * 2;
+      pops.push({
+        x: (at.x + .5) * cell, y: (at.y + .5) * cell,
+        vx: Math.cos(a) * (.03 + Math.random() * .05) * cell,
+        vy: Math.sin(a) * (.03 + Math.random() * .05) * cell - .04 * cell,
+        life: 1
+      });
+    }
+  }
+
+  function gameOver() {
+    state = 'over';
+    const record = score > best;
+    if (record) { best = score; saveBest(best); }
+    updateHud();
+    showScreen(
+      record ? '🏆' : '💔',
+      record ? '¡Nuevo <em>récord</em>!' : 'Chocaste',
+      record
+        ? `${score} ${score === 1 ? 'corazón' : 'corazones'}. Nunca habías llegado tan lejos 💙`
+        : `Juntaste ${score} ${score === 1 ? 'corazón' : 'corazones'}. Tu récord es ${best}.`,
+      'Volver a jugar', start
+    );
+  }
+
+  function start() {
+    reset();
+    screen.hidden = true;
+    state = 'playing';
+    last = performance.now();
+  }
+
+  function resume() {
+    screen.hidden = true;
+    state = 'playing';
+    acc = 0;
+    last = performance.now();
+  }
+
+  // ── DIBUJO ──
+  function heartPath(cx, cy, s) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + s * .40);
+    ctx.bezierCurveTo(cx - s * .62, cy - s * .02, cx - s * .48, cy - s * .62, cx, cy - s * .20);
+    ctx.bezierCurveTo(cx + s * .48, cy - s * .62, cx + s * .62, cy - s * .02, cx, cy + s * .40);
+    ctx.closePath();
+  }
+
+  function drawBoard() {
+    ctx.clearRect(0, 0, size, size);
+    ctx.strokeStyle = 'rgba(70,130,180,.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 1; i < GRID; i++) {
+      const p = Math.round(i * cell) + .5;
+      ctx.moveTo(p, 0); ctx.lineTo(p, size);
+      ctx.moveTo(0, p); ctx.lineTo(size, p);
+    }
+    ctx.stroke();
+  }
+
+  function drawFood(now) {
+    const pulse = 1 + Math.sin(now / 280) * .07;
+    const cx = (food.x + .5) * cell, cy = (food.y + .5) * cell;
+    const g = ctx.createLinearGradient(cx, cy - cell * .5, cx, cy + cell * .5);
+    g.addColorStop(0, '#f6a8c4');
+    g.addColorStop(1, '#d4638f');
+    ctx.save();
+    ctx.shadowColor = 'rgba(212,99,143,.45)';
+    ctx.shadowBlur  = cell * .35;
+    ctx.fillStyle = g;
+    heartPath(cx, cy, cell * .98 * pulse);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawSnake(t) {
+    // Interpolamos entre el paso anterior y el actual: el movimiento se ve
+    // continuo aunque la lógica avance de a una celda.
+    const pts = snake.map((s, i) => {
+      const p = prev[i] || prev[prev.length - 1] || s;
+      return {
+        x: (p.x + (s.x - p.x) * t + .5) * cell,
+        y: (p.y + (s.y - p.y) * t + .5) * cell
+      };
+    });
+
+    const g = ctx.createLinearGradient(0, 0, size, size);
+    g.addColorStop(0, '#9adcea');
+    g.addColorStop(1, '#4682B4');
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(70,130,180,.28)';
+    ctx.shadowBlur = cell * .3;
+    ctx.strokeStyle = g;
+    ctx.lineWidth = cell * .76;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    if (pts.length === 1) ctx.lineTo(pts[0].x, pts[0].y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Cabeza + ojitos
+    const h = pts[0];
+    ctx.fillStyle = '#3f76a4';
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, cell * .40, 0, Math.PI * 2);
+    ctx.fill();
+
+    const fx = dir.x, fy = dir.y;         // adelante
+    const nx = -fy,   ny = fx;            // costado
+    for (const s of [1, -1]) {
+      const ex = h.x + fx * cell * .13 + nx * s * cell * .16;
+      const ey = h.y + fy * cell * .13 + ny * s * cell * .16;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(ex, ey, cell * .10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1a2a3a';
+      ctx.beginPath(); ctx.arc(ex + fx * cell * .03, ey + fy * cell * .03, cell * .05, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function drawPops() {
+    for (const p of pops) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(p.life, 0);
+      ctx.fillStyle = '#e8a0bf';
+      heartPath(p.x, p.y, cell * .30 * p.life);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function updatePops(dt) {
+    const k = dt / 16.7;
+    for (const p of pops) { p.x += p.vx * k; p.y += p.vy * k; p.vy += .012 * cell * k; p.life -= .035 * k; }
+    pops = pops.filter(p => p.life > 0);
+  }
+
+  function frame(now) {
+    rafId = requestAnimationFrame(frame);
+    const dt = Math.min(now - last, 120);   // pestaña en segundo plano: nunca saltamos varios pasos de golpe
+    last = now;
+
+    if (state === 'playing') {
+      acc += dt;
+      let guard = 0;
+      while (acc >= stepMs() && guard++ < 4) {
+        acc -= stepMs();
+        step();
+        if (state !== 'playing') { acc = 0; break; }
+      }
+    }
+    updatePops(dt);
+
+    drawBoard();
+    drawFood(now);
+    drawSnake(state === 'playing' ? Math.min(acc / stepMs(), 1) : 1);
+    drawPops();
+  }
+
+  // ── ABRIR / CERRAR ──
+  function isOpen() { return overlay.classList.contains('active'); }
+
+  function open() {
+    overlay.classList.add('active');
+    document.body.classList.add('snake-open');
+    layout();
+    reset();
+    state = 'idle';
+    hintEl.textContent = matchMedia('(hover: none)').matches
+      ? 'Deslizá el dedo para moverte'
+      : 'Flechas o WASD · Esc para salir';
+    showScreen('💙', 'Juntá <em>corazones</em>',
+      'Cuidado con las paredes y con tu propia cola.', 'Empezar', start);
+    if (!rafId) { last = performance.now(); rafId = requestAnimationFrame(frame); }
+  }
+
+  function close() {
+    overlay.classList.remove('active');
+    document.body.classList.remove('snake-open');
+    state = 'idle';
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    updateHud();
+  }
+
+  openBtn.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  screenBtn.addEventListener('click', () => screenAction());
+
+  // ── TECLADO ──
+  const KEYS = {
+    arrowup: [0, -1], w: [0, -1], arrowdown: [0, 1],  s: [0, 1],
+    arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0], d: [1, 0]
+  };
+  document.addEventListener('keydown', e => {
+    if (!isOpen()) return;
+    const k = e.key.toLowerCase();
+    if (k === 'escape') { close(); return; }
+    if (KEYS[k]) {
+      e.preventDefault();                       // que las flechas no scrolleen la página de atrás
+      if (state === 'idle') start();
+      if (state === 'playing') pushDir(KEYS[k][0], KEYS[k][1]);
+      return;
+    }
+    if (k === ' ' || k === 'enter') {
+      e.preventDefault();
+      if (state !== 'playing') screenAction();
+    }
+  });
+
+  // ── SWIPE ──
+  // touchmove con passive:false + preventDefault: mientras jugás, el dedo mueve
+  // al snake y nunca scrollea la página de atrás.
+  let tx = 0, ty = 0, tracking = false;
+  const SWIPE = 24;
+
+  overlay.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) { tracking = false; return; }
+    tracking = true;
+    tx = e.touches[0].clientX;
+    ty = e.touches[0].clientY;
+  }, { passive: true });
+
+  overlay.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!tracking || e.touches.length !== 1) return;
+    const t0 = e.touches[0];
+    const dx = t0.clientX - tx, dy = t0.clientY - ty;
+    if (Math.abs(dx) < SWIPE && Math.abs(dy) < SWIPE) return;
+    if (state === 'idle') start();
+    if (state === 'playing') {
+      if (Math.abs(dx) > Math.abs(dy)) pushDir(dx > 0 ? 1 : -1, 0);
+      else                             pushDir(0, dy > 0 ? 1 : -1);
+    }
+    tx = t0.clientX; ty = t0.clientY;   // nuevo origen: se pueden encadenar swipes sin levantar el dedo
+  }, { passive: false });
+
+  overlay.addEventListener('touchend',    () => { tracking = false; }, { passive: true });
+  overlay.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
+
+  // ── PAUSA Y REDIMENSIÓN ──
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && state === 'playing') {
+      state = 'paused';
+      showScreen('⏸️', 'En pausa', 'Te esperamos acá.', 'Seguir jugando', resume);
+    }
+  });
+
+  let resizeRaf = null;
+  window.addEventListener('resize', () => {
+    if (!isOpen() || resizeRaf) return;
+    resizeRaf = requestAnimationFrame(() => { resizeRaf = null; layout(); });
+  });
+
+  updateHud();
+})();
 </script>
 </body>
 </html>
